@@ -1,0 +1,3 @@
+WINDOWS_RELEASE_GITHUB_URI=https://github.com/git-for-windows/git/releases/latest
+WINDOWS_RELEASE_GITHUB_DOWNLOAD_URI=https://github.com/git-for-windows/git/releases/download/
+LATEST_GITHUB_URI_REGEX=/login?return_to=

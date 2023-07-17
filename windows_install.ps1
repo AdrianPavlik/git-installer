@@ -1,4 +1,4 @@
-<# https://devblogs.microsoft.com/scripting/table-of-basic-powershell-commands/ #>
+# https://devblogs.microsoft.com/scripting/table-of-basic-powershell-commands/
 
 <#
  #########################
@@ -10,12 +10,51 @@
 #>
 try 
 {
-     <# Clears the terminal at startup #>
+     # Clears the terminal at startup
      Clear-Host
 
-     $Uris = Get-Content -Path .\uris.txt -Raw
-     $WindowsUri = Get-GitWindowsUri $Uris
-     Write-Host $WindowsUri
+     # Read and parse constants into a hashtable
+     $rawConstants = Get-Content -Path '.\constants.txt' -Raw
+     $constantsTable = Convert-StringDataIntoHastable $rawConstants
+
+     # Get constant values for the process
+     $gitReleaseUri = $constantsTable['WINDOWS_RELEASE_GITHUB_URI']
+     $gitDownloadUri = $constantsTable['WINDOWS_RELEASE_GITHUB_DOWNLOAD_URI']
+     $gitReleaseRegex = $constantsTable['LATEST_GITHUB_URI_REGEX']
+
+     # Fetch HTML content of the Git release page from GitHub
+     $gitReleaseHtmlContent = Invoke-WebRequest -Uri $gitReleaseUri -UseBasicParsing
+
+     # Extract the elem for the latest version of the Git release on Windows
+     $gitReleaseHtmlElem = Get-ElementByHrefRegexPattern -HtmlContent $gitReleaseHtmlContent -HrefRegex "*$($gitReleaseRegex)*" # * - This matches any number of any characters before and after the pattern
+
+     # Extract, sanitize and parse uri of the elem
+     $latestGitReleaseUri = [System.Uri]::UnescapeDataString($gitReleaseHtmlElem.href -split [regex]::Escape($gitReleaseRegex))
+
+     # Extract latest version naming of Git from URI
+     $latestGitVersionNaming = ($latestGitReleaseUri -split '/' | Select-Object -Last 1)
+
+     # Extract latest version of Git
+     if ($latestGitVersionNaming -match 'v(.*?)\.windows') {
+          $latestGitVersion = $matches[1]
+     }
+     else {
+          throw "Couldn't extract Git version."
+     }
+
+     # Create uri for downloading latest windows version
+     $latestGitDownloadUri = $gitDownloadUri + $latestGitVersionNaming + '/Git-' + $latestGitVersion + '-64-bit.exe'
+
+     # Download installer for Git
+     Invoke-WebRequest -Uri $latestGitDownloadUri -OutFile 'git-latest.exe'
+
+     # Install Git
+     
+
+     # Delete the installer after the installation process is complete
+     Remove-Item -Path '.\git-latest.exe'
+
+     Write-Host $latestGitDownloadUri
 }
 catch 
 {
@@ -34,33 +73,30 @@ catch
 
 <#
 .SYNOPSIS
-     Returns windows uri for git latest release page on github website.
-.EXAMPLE
-     # Declared data
-     $Uris = "WINWDOWS=www.example.com"
-
-     # Function call
-     Get-GitWindowsUri $Uris
-
-     # Returned value
-     www.example.com
+    Retrieves the HTML element whose 'href' attribute matches a specified regex pattern from HTML content.
 #>
-function Get-GitWindowsUri {
-     param 
+function Get-ElementByHrefRegexPattern {
+     param
      (
-          $Uris
+          $HtmlContent, # HTML content containing links
+          $HrefRegex    # Regex pattern to match the URI in the HTML content
      )
 
-     try 
+     try
      {
-          $UrisHastable = Convert-StringDataIntoHastable $Uris
-          return $UrisHastable["WINDOWS"]
+          $filteredUris = $HtmlContent.Links | Where-Object { $_.href -like $HrefRegex }
+
+          if ($filteredUris) {
+               return $filteredUris | Select-Object -First 1
+          }
+          else {
+               throw "Element with matching URI '$HrefRegex' was not found in the HTML content."
+          }
      }
-     catch 
+     catch
      {
           throw $_
      }
-
 }
 
 <#
@@ -81,7 +117,7 @@ function Get-GitWindowsUri {
 function Convert-StringDataIntoHastable {
      param 
      (
-          $Stringdata
+          [string]$Stringdata # String data to parse into hashtable
      )
      try 
      {
