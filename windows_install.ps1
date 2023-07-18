@@ -10,6 +10,8 @@
 #>
 try 
 {
+     # TODO: Refactor code
+
      # Clears the terminal at startup
      Clear-Host
 
@@ -49,7 +51,7 @@ try
      Invoke-WebRequest -Uri $latestGitDownloadUri -OutFile 'git-latest.exe'
 
      # Install Git
-     
+     # TODO: Implement silent installation through cmd here
 
      # Delete the installer after the installation process is complete
      Remove-Item -Path '.\git-latest.exe'
