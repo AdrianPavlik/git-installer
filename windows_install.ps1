@@ -37,6 +37,7 @@ try
      $latestGitVersionNaming = ($latestGitReleaseUri -split '/' | Select-Object -Last 1)
 
      # Extract latest version of Git
+     # TODO: Move regex patterns into constants file
      if ($latestGitVersionNaming -match 'v(.*?)\.windows') {
           $latestGitVersion = $matches[1]
      }
@@ -45,15 +46,18 @@ try
      }
 
      # Create uri for downloading latest windows version
+     # TODO: Move link patterns into constants file
      $latestGitDownloadUri = $gitDownloadUri + $latestGitVersionNaming + '/Git-' + $latestGitVersion + '-64-bit.exe'
 
      # Download installer for Git
+     # TODO: Move file name into constants file
      Invoke-WebRequest -Uri $latestGitDownloadUri -OutFile 'git-latest.exe'
 
      # Install Git
      # TODO: Implement silent installation through cmd here
 
      # Delete the installer after the installation process is complete
+     # TODO: Move file name into constants file
      Remove-Item -Path '.\git-latest.exe'
 
      Write-Host $latestGitDownloadUri
