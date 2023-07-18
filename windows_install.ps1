@@ -1,4 +1,93 @@
 # https://devblogs.microsoft.com/scripting/table-of-basic-powershell-commands/
+# https://www.youtube.com/watch?v=X6nU5QCF8XI&list=PLnK11SQMNnE5_cl8n54h6OXNMnGl5Odtq
+
+<#
+ #########################
+ #####--------------######
+ #####---_DEFINE_---######
+ #####----_ARGS_----######
+ #####--------------######
+ #########################
+#>
+
+param (
+     [Alias('s')]
+     [switch]$slow,
+
+     [Alias('y')]
+     [switch]$yes,
+
+     [Alias('g')]
+     [switch]$gui,
+
+     [Parameter(Mandatory = $true)]
+     [Alias('n')]
+     [string]$gitname,
+
+     [Parameter(Mandatory = $true)]
+     [Alias('e')]
+     [mailaddress]$gitemail
+)
+
+# Import helper functions
+Import-Module .\src\windows\Get-FileFromWeb.ps1
+
+<#
+ #########################
+ ####-----------------####
+ ####----_HELPER_-----####
+ ####---_FUNCTIONS_---####
+ ####-----------------####
+ #########################
+#>
+
+<#
+.SYNOPSIS
+    Retrieves the HTML element whose 'href' attribute matches a specified regex pattern from HTML content.
+#>
+function Get-ElementByHrefRegexPattern($HtmlContent, $HrefRegex) {
+     try {
+          $filteredUris = $HtmlContent.Links | Where-Object { $_.href -like $HrefRegex }
+
+          if ($filteredUris) {
+               return $filteredUris | Select-Object -First 1
+          }
+          else {
+               throw "Element with matching URI '$HrefRegex' was not found in the HTML content."
+          }
+     }
+     catch {
+          throw $_
+     }
+}
+
+<#
+.SYNOPSIS
+     Parses string data into hashtable (key=value).
+.LINK
+     https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_hash_tables
+.EXAMPLE
+     # Declared data
+     $String = "TEST=This is example"
+
+     # Function call
+     Get-ValuesOfString $String
+
+     # Returned value (hashtable)
+     Name=TEST, Value=This is example
+#>
+function Convert-StringDataIntoHastable {
+     param (
+          [string]$Stringdata
+     )
+
+     try {
+          return ConvertFrom-StringData $Stringdata
+     }
+     catch {
+          throw $_
+     }
+}
 
 <#
  #########################
@@ -8,6 +97,7 @@
  #####--------------######
  #########################
 #>
+
 try 
 {
      # TODO: Refactor code
@@ -16,7 +106,7 @@ try
      Clear-Host
 
      # Read and parse constants into a hashtable
-     $rawConstants = Get-Content -Path '.\constants.txt' -Raw
+     $rawConstants = Get-Content -Path '.\src\constants.txt' -Raw
      $constantsTable = Convert-StringDataIntoHastable $rawConstants
 
      # Get constant values for the process
@@ -65,72 +155,4 @@ try
 catch 
 {
      Write-Error $_
-}
-
-
-<#
- #########################
- ####-----------------####
- ####----_HELPER_-----####
- ####---_FUNCTIONS_---####
- ####-----------------####
- #########################
-#>
-
-<#
-.SYNOPSIS
-    Retrieves the HTML element whose 'href' attribute matches a specified regex pattern from HTML content.
-#>
-function Get-ElementByHrefRegexPattern {
-     param
-     (
-          $HtmlContent, # HTML content containing links
-          $HrefRegex    # Regex pattern to match the URI in the HTML content
-     )
-
-     try
-     {
-          $filteredUris = $HtmlContent.Links | Where-Object { $_.href -like $HrefRegex }
-
-          if ($filteredUris) {
-               return $filteredUris | Select-Object -First 1
-          }
-          else {
-               throw "Element with matching URI '$HrefRegex' was not found in the HTML content."
-          }
-     }
-     catch
-     {
-          throw $_
-     }
-}
-
-<#
-.SYNOPSIS
-     Parses string data into hashtable (key=value).
-.LINK
-     https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_hash_tables
-.EXAMPLE
-     # Declared data
-     $String = "TEST=This is example"
-
-     # Function call
-     Get-ValuesOfString $String
-
-     # Returned value (hashtable)
-     Name=TEST, Value=This is example
-#>
-function Convert-StringDataIntoHastable {
-     param 
-     (
-          [string]$Stringdata # String data to parse into hashtable
-     )
-     try 
-     {
-          return ConvertFrom-StringData $Stringdata
-     }
-     catch 
-     {
-          throw $_
-     }
 }
